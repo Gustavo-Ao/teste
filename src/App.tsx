@@ -19,69 +19,89 @@ interface OrgaoEmissorProps {
   label: String;
 }
 
-// async function getOrgao() {
-//   const orgaos: OrgaoEmissorProps[] = await fetch('https://632374adbb2321cba91a441a.mockapi.io/api-teste/orgaos')
-//   .then(result => result.json())
-//   .then(({orgao_emissor}) => orgao_emissor as OrgaoEmissorProps[]);
-
-//   return orgaos;
-// }
+interface FormValueProps {
+  orgao_expedidor: String;
+  date: String | undefined;
+  orgao_emissor: String;
+  sexo: String;
+}
 
 function App() {
-  const [orgaos, setOrgaos] = React.useState([]);
-  const [orgao, setOrgao] = React.useState('');
-  const [inputOrgao, setInputOrgao] = React.useState('');
+  const [formValues, setFormValues] = React.useState({} as FormValueProps);
 
-  const [dataEmissao, setDate] = React.useState<Dayjs | null>();
+  const handleInputChange = (event: any) => {
+    const { name, value } = event.target;
+    setFormValues({...formValues, [name]: value})
+  }
 
+  const handleDateChange = (event: Dayjs | null) => {
+    const value  = event?.format('DD/MM/YYYY');
+    setFormValues({...formValues, ['date']: value});
+    setDateValue(event);
+  }
+
+  const handleOrgaoChange = (event: any) => {
+    const { value } = orgaos.find(org => org.label === event.target.innerText) as OrgaoEmissorProps ;
+    setFormValues({...formValues, ['orgao_emissor']: value});
+  }
+  
+  const [dateInput, setDateValue] = React.useState<Dayjs | null>(null);
+  const [orgaos, setOrgaosList] = React.useState<readonly OrgaoEmissorProps[]>([]);
+  
   const handleSubmit = (e: any) => {
     e.preventDefaoult();
-
+    
     const formData = new FormData(e.target);
     const data = Object.fromEntries(formData);
   }
 
-  fetch('https://632374adbb2321cba91a441a.mockapi.io/api-teste/orgaos')
-    .then(result => result.json())
-    .then(({orgao_emissor}) => {
-      setOrgaos(orgao_emissor)
-    });
+  React.useEffect(() => {
+    fetch('https://632374adbb2321cba91a441a.mockapi.io/api-teste/orgaos')
+      .then(result => result.json())
+      .then(({orgao_emissor}) => {
+        setOrgaosList(orgao_emissor)
+      });
+  }, []);
+  
+  console.log('Form Value', formValues)
+
+  // FALTA FAZER VERIFICAÇÃO DO FORMULÁRIO
 
   return (
     <form onSubmit={handleSubmit}>
       <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', flexWrap: 'wrap' }}>
           <FormControl sx={{ m: 1, width: '40ch' }} variant="outlined">
-            <TextField className="my-12" id="numero-rg" label="Número do RG" variant="outlined" required/>
+            <TextField 
+              className="my-12" 
+              id="numero-rg" 
+              label="Número do RG" 
+              variant="outlined"
+              name="numero-rg" 
+              onChange={handleInputChange} 
+              required
+             />
           </FormControl>
 
           <FormControl sx={{ m: 1, width: '30ch' }} variant="outlined">
             <LocalizationProvider dateAdapter={AdapterDayjs}>
               <DatePicker
-                className="formComponent"
                 label="Data de emissão"
-                value={dataEmissao}
+                value={dateInput}
                 onChange={(newDate) => {
-                  setDate(newDate);
+                  handleDateChange(newDate)
                 }}
-                renderInput={(params) => <TextField {...params} required/>}
+                renderInput={(params) =>
+                  <TextField {...params} required/>
+                }
               />
             </LocalizationProvider>
           </FormControl>
 
           <FormControl sx={{ m: 1, width: '50ch' }} variant="outlined">
             <Autocomplete
-              disablePortal
-              id="combo-box-demo"
-              value={orgao}
-              inputValue={inputOrgao}
               options={orgaos}
-              // onChange={(newValue: number | null) => {
-              //   setOrgao(newValue)
-              // }}
-              onInputChange={(event, newInputValue) => {
-                setInputOrgao(newInputValue);
-              }}
-              renderInput={(params) => <TextField {...params} label="Órgão expedidor" />}
+              onChange={(newValue) => handleOrgaoChange(newValue)}
+              renderInput={(params) => <TextField required onChange={handleInputChange} {...params} label="Órgão expedidor" />}
             />
           </FormControl>   
 
@@ -90,7 +110,8 @@ function App() {
             <RadioGroup
               row
               aria-labelledby="demo-row-radio-buttons-group-label"
-              name="row-radio-buttons-group"
+              name="sexo"
+              onChange={handleInputChange}
             >
               <FormControlLabel value="female" control={<Radio />} label="Feminino" />
               <FormControlLabel value="male" control={<Radio />} label="Masculino" />
